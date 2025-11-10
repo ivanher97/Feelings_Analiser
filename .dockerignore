@@ -1,0 +1,15 @@
+# Git y entornos
+.git/
+.gitignore
+.dockerignore
+venv/
+__pycache__/
+
+# Documentación y scripts que no son de la API
+README.md
+train.py
+etl.py
+
+# Datos
+*.parquet
+*.csv

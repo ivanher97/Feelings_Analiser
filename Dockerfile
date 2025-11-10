@@ -1,7 +1,7 @@
 # Fichero: Dockerfile
 
 # 1. Usar una imagen base de Python oficial y ligera
-FROM python:3.9-slim
+FROM python:3.13-slim
 
 # 2. Establecer un directorio de trabajo dentro del contenedor
 # A partir de aquí, todos los comandos se ejecutan en /app
@@ -15,12 +15,11 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # 5. Copiar el resto del código de la aplicación Y los artefactos
-COPY main.py .
-COPY mlruns ./mlruns
+COPY . .
 
 # 6. Exponer el puerto en el que Uvicorn correrá
 EXPOSE 8000
 
 # 7. Definir el comando para ejecutar la aplicación
 # Usamos 0.0.0.0 para que sea accesible desde fuera del contenedor
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["gunicorn", "-w", "2", "-k", "uvicorn.workers.UvicornWorker", "main:app", "--host", "0.0.0.0", "--port", "8000"]
