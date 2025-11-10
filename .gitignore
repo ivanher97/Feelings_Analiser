@@ -1,0 +1,19 @@
+# Ignorar artefactos de MLflow
+mlruns/
+
+# Ignorar los datos
+# (Asumo que tu 'Golden Sample' está en una carpeta 'data')
+data/
+*.parquet
+*.csv
+
+# Ignorar artefactos de Python
+__pycache__/
+.ipynb_checkpoints/
+
+# Ignorar configuración de IDE
+.vscode/
+.idea/
+
+# Ignorar variables de entorno
+.env
