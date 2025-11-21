@@ -1,41 +1,38 @@
-# Arquitectura del Pipeline de Sentimiento
+# End-to-End Amazon Sentiment Analysis Pipeline
 
-Este proyecto implementa un pipeline E2E (End-to-End) para analizar el sentimiento de reviews de Amazon. La arquitectura está diseñada para manejar la ingesta a escala de Big Data (PySpark), el entrenamiento y versionado reproducible (MLflow), y el despliegue como una API de inferencia (FastAPI/Docker).
+![Python](https://img.shields.io/badge/Python-3.9-blue?style=flat-square&logo=python)
+![Spark](https://img.shields.io/badge/Apache%20Spark-3.5-orange?style=flat-square&logo=apachespark)
+![MLflow](https://img.shields.io/badge/MLflow-Tracking-0194E2?style=flat-square&logo=mlflow)
+![FastAPI](https://img.shields.io/badge/FastAPI-Serving-009688?style=flat-square&logo=fastapi)
+![Docker](https://img.shields.io/badge/Docker-Container-2496ED?style=flat-square&logo=docker)
 
----
-
-## Fase 1: ETL y Forjado de Datos (PySpark)
-
-**Problema:** El dataset (+5GB en S3) es demasiado grande para Pandas y presenta un desbalanceo de clases severo (86% positivos).
-
-**Solución:**
-
-* Lectura de datos Parquet en un DataFrame PySpark.
-* Implementación de una estrategia de **Undersampling** a escala (utilizando `sampleBy` y `union` de Spark) para crear un dataset balanceado.
-* Procesamiento y limpieza de texto.
-
-**Resultado:** Creación de un "Golden Sample" de 1 millón de filas (50/50) exportado a Parquet, listo para entrenamiento local.
+## Project Overview
+This project implements a scalable **End-to-End (E2E) Machine Learning Pipeline** to analyze sentiment in Amazon reviews. 
+The architecture is engineered to handle Big Data ingestion (PySpark), reproducible training and versioning (MLflow), and production-ready inference serving (FastAPI/Docker).
 
 ---
 
-## Fase 2: Entrenamiento y Registro (Scikit-learn & MLflow)
+## Architecture & Workflow
 
-**Modelado:** Se implementó un pipeline de Scikit-learn que consiste en `TfidfVectorizer` (para NLP) seguido de una `LogisticRegression`.
+### Phase 1: ETL & Data Engineering (PySpark)
+* **Challenge:** The dataset is massive (+5GB hosted on S3) making it unsuitable for Pandas, and suffers from severe class imbalance (86% positive reviews).
+* **Solution:**
+    * **Big Data Ingestion:** Leveraged **PySpark** to read and process Parquet files at scale.
+    * **Rebalancing Strategy:** Implemented a distributed **Undersampling** technique (using Spark's `sampleBy` and `union`) to neutralize bias.
+    * **NLP Preprocessing:** Text cleaning and tokenization at scale.
+* **Outcome:** Generated a "Golden Sample" of 1 million rows (50/50 balanced class distribution), exported to Parquet for optimized training.
 
-**MLOps:** Se utilizó **MLflow** para:
+### Phase 2: Training & MLOps (Scikit-learn & MLflow)
+* **Modeling:** Built a Scikit-learn pipeline integrating `TfidfVectorizer` (NLP Feature Extraction) and `LogisticRegression`.
+* **Experiment Tracking (MLflow):**
+    * **Tracking:** Logged multiple experimental runs, capturing hyperparameters and key metrics (Accuracy, F1-Score).
+    * **Artifact Management:** Automatically identified the best-performing run and registered the full pipeline as a model artifact.
+    * **Model Registry:** Versioned the final model as `amazon_sentiment_model` to strictly decouple the training environment from the production environment.
 
-* **Rastrear** múltiples experimentos (runs), registrando hiperparámetros y métricas (ej. accuracy, f1-score).
-* **Identificar** el mejor *run* y registrar el pipeline completo de Sklearn como un artefacto (model artifact).
-* **Versionar** el modelo final en el **MLflow Model Registry** bajo el nombre `amazon_sentiment_model` para desacoplar el entrenamiento del despliegue.
+### Phase 3: Inference API Deployment (FastAPI & Docker)
+* **Microservice:** Developed a RESTful API using **FastAPI** exposing a `/predict` endpoint for real-time inference.
+* **Dynamic Loading:** On startup, the API queries the MLflow Model Registry to fetch and load the specific `production` version of the model.
+* **Containerization:** * Created a **Dockerfile** to package the API and dependencies into an isolated, reproducible image.
+    * **Dependency Management:** Strictly pinned library versions (e.g., Scikit-learn, Python 3.9) to prevent **environment skew** between training and inference.
 
 ---
-
-## Fase 3: Despliegue de API (FastAPI & Docker)
-
-**Servicio:** Una API RESTful construida con **FastAPI** que expone un endpoint `/predict`.
-
-**Carga del Modelo:** Al iniciar, la API consulta el Model Registry de MLflow y carga la versión `production` del modelo `amazon_sentiment_model`.
-
-**Contenerización:** Un **Dockerfile** que empaqueta la API de FastAPI y sus dependencias (incluyendo mlflow y scikit-learn) en una imagen aislada.
-
-> **Nota:** Se gestionó la compatibilidad de versiones de librerías (ej. scikit-learn 1.X.X, Python 3.9) entre el entorno de entrenamiento y el contenedor de producción para evitar *mismatch* de artefactos.
